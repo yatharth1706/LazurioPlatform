@@ -103,8 +103,8 @@ the gap blocks the switch of one hosted Work Environment (`hosted-organization-p
 |---|---|---|---|---|---|
 | 14 | Discovery | Scan of `organizations/*`; hosted catalog filtered to one Organization and Team by environment (`R:launchpad/src/server.mjs:587-588`), a documented limitation (`R:manual/hosted-machine-handover.md:121-134`) | None (A.1 #1) | Discovery from the Folder | yes |
 | 15 | Organization install | `lazurio organization install <login> [--role builder|steward]`, Admin = no role, restricted slots excluded for roles, repository-db bootstrap (`R:lazurio/organization-install-lib.mjs:62-78`, `:875-877`, `:440`); root path hard-coded `organizations/<login>_GEN3` (`:139-141`); in-app from the GitHub setup step (`R:launchpad/src/setup-github-lib.mjs:803-805`) | `lazurio organization install <login> [--root <owner>/<repo>]`, `lazurio personalspace install` and `/api/content*` (F9 addendum of 2026-10-04, `src/content/`); as the resident: bare = Admin (verified live, else `role-unverified`), `--role builder|steward` = restricted slots excluded (role verified live), plus `--role reader` (read on the root and an active membership, F9 addendum of 2026-10-05), which the resident does not know; the Launchpad picks the form from the live role; a module's declared data mount (`repository_db_mount`) follows its module (B7 amendment of 2026-10-17), other database slots left out | The root's target source, the Dashboard's Organization record (Lazurio for GitHub), is not wired; meanwhile name candidate and scan, each verified (`docs/content-sync.md`) | new Machines |
-| 16 | Synchronize / update | `lazurio update`: root → Organization roots → children, recovery stash, ff-only (`R:lazurio/runtime/lazurio-update-lib.mjs:122-358`, `:742-758`); `POST /api/update`, `/api/sync`; legacy `pull`, `pull-autostash`, `pull-all` routes run the full update (`R:launchpad/src/server.mjs:1466-1483`) | None; the manual tells agents `git pull --ff-only` on a clean default branch (`docs/decisions.md:729-731`) | Explicit sync | after switch |
-| 17 | Roles builder/steward/admin | Scope filter on restricted slots (root decision 0143) | Install scope by the role, confirmed live (bare = Admin, `--role builder|steward|reader`; the Launchpad picks it from the live role; F9 addenda of 2026-10-04 and 2026-10-05) | Synchronization has no role scope yet (not implemented) | new Machines |
+| 16 | Synchronize / update | `lazurio update`: root → Organization roots → children, recovery stash, ff-only (`R:lazurio/runtime/lazurio-update-lib.mjs:122-358`, `:742-758`); `POST /api/update`, `/api/sync`; legacy `pull`, `pull-autostash`, `pull-all` routes run the full update (`R:launchpad/src/server.mjs:1466-1483`) | Released 2026-10-24 (v0.1.11): `lazurio organization sync [<github-login>] [--folder <Folder>] [--json]`, the installed Launchpad at its start and then every hour, the Open of one module, and the first part of `lazurio update` and Aktualizovat run one core, `syncContent` (`src/content/sync.ts`). It fetches and fast-forwards clean primary checkouts and declared data mounts only; it never clones an absent repository, stashes, switches branches, resets, or selects or activates a product version ([content synchronization](content-sync.md#synchronization--implemented-2026-10-24), F9 amendments of 2026-10-24). *Historical, 2026-09-28: none; the manual told agents `git pull --ff-only` on a clean default branch.* | None for synchronization (*was:* explicit sync); `organization add` is still open (P10) | after switch |
+| 17 | Roles builder/steward/admin | Scope filter on restricted slots (root decision 0143) | Install scope by the role, confirmed live (bare = Admin, `--role builder|steward|reader`; the Launchpad picks it from the live role; F9 addenda of 2026-10-04 and 2026-10-05) | None: synchronization (implemented 2026-10-24) needs no role filter, because it never materializes. It fast-forwards only checkouts that installation already placed within the role's scope; an absent one is `absent`, and one GitHub refuses is `repository-denied` ([content synchronization](content-sync.md#synchronization--implemented-2026-10-24)) | new Machines |
 | 18 | Teams grouping | `module_slots[].teams` N:M, legacy fallbacks (`R:…/discovery-lib.mjs:910`; `R:launchpad/public/app.js:2509`) | Team only as manual text and binding fields (`src/folder/machine-binding.ts:16-30`) | None: superseded by decision F32, Teams are not a presentation axis of the Launchpad; the catalog keeps them for `lazurio module list`. Since F32's final addendum of 2026-10-03 an Organization has two sections instead, Workspace (every module) and Productionspace (read-only), never one by Team; the first addendum's three layout groups (Organization, Workspace, Productionspace) are gone | no (F32) |
 | 19 | Productionspace | Read-only cards (`R:launchpad/public/app.js:2914-3056`) | Read-only tiles and rows in the Organization's Productionspace section: name, path, "not checked out" when it is not, the GitHub link; no status dot. The Organization's `infra` is not listed: neither a module nor a production repository (catalog `repositories`, `productionspace/*` only; F32 final addendum of 2026-10-03) | None: carried as a read-only listing without an action or a page; no longer "not carried" | no |
 | 20 | Template Organizations | Excluded from runtime (`R:…/discovery-lib.mjs:1937-1952`) | Refused fail-closed (`src/organizations/read-applications.ts:13-17`) | None | no |
@@ -461,6 +461,18 @@ asks the Admin to give the Team access on GitHub, never "your GitHub account". T
 broker mints only for repositories of its Organization the Team holds a grant on
 (push or more from a broker before github-app 0.11.0, read too from 0.11.0); everything else stays
 denied.*
+*Amended on 2026-11-02 to the released behaviour (#715):* synchronization is
+implemented as [content synchronization](content-sync.md#synchronization--implemented-2026-10-24)
+describes it (F9 amendments of 2026-10-24, root decision 0212; first released in
+v0.1.11), narrower than the design above. `lazurio organization sync` only fetches and
+fast-forwards clean primary checkouts and declared data mounts, and reports an absent
+one as `absent`; materializing absent repositories stays with `lazurio organization
+install` and `lazurio personalspace install`. It never stashes, switches branches,
+resets, or selects, downloads or activates a product version. `lazurio update` and
+Aktualizovat in Nová karta run it as their first part, with Lazurio's own update as a
+separate core and lock. `lazurio organization add` is not implemented. The surface
+below is the 2026-09-28 design: the page runs synchronization through Aktualizovat and
+in the background, not through a "Synchronize" action in the Organization view.
 Surface: "Synchronize" as the page action in the Organization view header, "Add
 Organization" at the bottom of the sidebar (T3's "Add project"). No state. On a Team
 Environment the identity is the broker's `gh` wrapper that Machines installs
@@ -468,7 +480,8 @@ Environment the identity is the broker's `gh` wrapper that Machines installs
 the operator account resolves and names the identity in the result.
 
 **Not on the switch line** for existing Machines: their repositories exist, and agents
-fast-forward by hand as the manual says. **New** Work Machines (A.2 #15) get their
+fast-forward by hand as the manual says (*historical:* since 2026-10-24 the Launchpad
+and `lazurio organization sync` fast-forward them). **New** Work Machines (A.2 #15) get their
 Organizations cloned by the agent in T3 Code from the manual until P10 (H4, decided
 2026-09-28); P10 then replaces that hand step, see E.
 
@@ -876,7 +889,7 @@ Sizes: S = days, M = one to two weeks, L = more, for one agent with review. Roug
 | M3 | Local Ubuntu VM qualification harness (C.5) | M | — | M | qualify any Machines release before a real Machine | Draft: Machines #244 |
 | O1 | One Work Machine switched; then the others | O | M2 | S each | use the Platform Launchpad only | waits for M2 and a qualified candidate |
 | — | **Switch line, existing hosted Work Environment: P1–P8, M1–M3, O1** | | | | | |
-| P10 | `organization sync` and `organization add` (B7, F9) | P | P4 | L | synchronize and add Organizations from page and CLI | no pull request |
+| P10 | `organization sync` and `organization add` (B7, F9) | P | P4 | L | synchronize and add Organizations from page and CLI | `organization sync`: merged in #620 (2026-10-24, released in v0.1.11); `organization add`: no pull request |
 | — | **New Work Machines: switch line, their Organizations cloned by the agent in T3 Code from the manual until P10 (H4, decided 2026-09-28)** | | | | | |
 | P11 | `ssh-keys` and Settings → Access (B10) | P | P3 | S | add a laptop key in the browser | no pull request |
 | P12 | Team: server refuses personal gh; Tools shows the broker identity (B12) | P | — | S | — | merged: #66 |
