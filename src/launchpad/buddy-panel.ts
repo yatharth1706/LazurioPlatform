@@ -12,6 +12,7 @@ import {
   type PersonaDraft,
   type PersonaSaveResult,
   saveLine,
+  telegramOfReading,
   telegramRow,
   withForm,
   withYourName,
@@ -313,7 +314,7 @@ export function createBuddyPanel(
 
   /** Telegram's row: its state and its one action. */
   function drawChannels(copy: Copy) {
-    const telegram = options.facts().reading?.telegram;
+    const telegram = telegramOfReading(options.facts().reading);
     const row = telegramRow(telegram, copy);
     const key = drawnKey([row, copy.telegramTitle]);
     if (key === channelsDrawn) return;

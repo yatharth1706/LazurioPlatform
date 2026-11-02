@@ -37,6 +37,7 @@ import {
   telegramApproveLine,
   telegramConnectLine,
   telegramFirstStep,
+  telegramOfReading,
   telegramPairingLine,
   telegramRow,
   telegramScreen,
@@ -1117,12 +1118,39 @@ test("Nastavení → Buddy → Kanály: one state in Lazurio's words and one act
       busy: false,
       action: "connect",
     });
+  // Before the first reading: checking, as the Stav row (#700).
   expect(telegramRow(undefined, cs)).toEqual({
+    tone: "off",
+    line: "Ověřuji…",
+    busy: false,
+    action: "none",
+  });
+  expect(telegramRow(undefined, cs).line).toBe(buddyStateView(null, cs).word);
+  // A reading that came, and the state is not known: could not verify.
+  expect(telegramRow(telegram({ state: "unknown" }), cs)).toEqual({
     tone: "off",
     line: "Nepodařilo se ověřit",
     busy: false,
     action: "none",
   });
+});
+
+test("the Telegram row's reading: none until GET /api/buddy answers, unknown when the answer has no Telegram (#700)", () => {
+  expect(telegramOfReading(null)).toBeUndefined();
+  const reading: BuddyReading = {
+    state: "works",
+    signIn: "connected",
+    persona: null,
+  };
+  expect(telegramOfReading(reading)).toBe(unknownTelegram);
+  expect(telegramRow(telegramOfReading(reading), cs).line).toBe(
+    "Nepodařilo se ověřit",
+  );
+  const connected = telegram({ state: "connected", bot: "rex_buddy_bot" });
+  expect(telegramOfReading({ ...reading, telegram: connected })).toBe(
+    connected,
+  );
+  expect(telegramRow(telegramOfReading(null), cs).line).toBe("Ověřuji…");
 });
 
 test("Připojit Telegram: where it opens, the token's shape, the last step from the reading, and one line per refusal", () => {

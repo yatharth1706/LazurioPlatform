@@ -1234,13 +1234,33 @@ export type TelegramRowView = Readonly<{
   action: TelegramRowAction;
 }>;
 
+/** Gets the Telegram reading for the row from `GET /api/buddy`. The result
+ * is undefined until the first answer comes. If an answer comes without
+ * Telegram, the result is `unknownTelegram`, because the Launchpad does not
+ * say the state (#700). */
+export function telegramOfReading(
+  reading: BuddyReading | null,
+): TelegramReading | undefined {
+  return reading === null ? undefined : (reading.telegram ?? unknownTelegram);
+}
+
 /** Nastavení → Buddy → Kanály → Telegram, and the step's part: its state in
- * Lazurio's words, never Hermes's, and its one action. */
+ * Lazurio's words, never Hermes's, and its one action. Before the first
+ * reading (undefined), the row shows "Ověřuji…", as the Stav row does. It
+ * shows "Nepodařilo se ověřit" only when a reading came and the state is not
+ * known (#700). */
 export function telegramRow(
   telegram: TelegramReading | undefined,
   copy: Copy,
 ): TelegramRowView {
-  const value = telegram ?? unknownTelegram;
+  if (telegram === undefined)
+    return {
+      tone: "off",
+      line: copy.startChecking,
+      busy: false,
+      action: "none",
+    };
+  const value = telegram;
   switch (value.state) {
     case "none":
       return value.pending
